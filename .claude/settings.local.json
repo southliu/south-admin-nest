@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tree:*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "Bash(pnpm add:*)",
+      "Bash(dir:*)",
+      "Bash(pnpm run build)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm run start:*)",
+      "Bash(timeout:*)",
+      "Bash(ping:*)"
+    ]
+  }
+}
