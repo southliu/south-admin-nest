@@ -1,19 +1,22 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Role } from '../entities/role.entity';
-import { Permission } from '../entities/permission.entity';
 import { Menu } from '../entities/menu.entity';
 import { CreateRoleDto, UpdateRoleDto } from '../dto/role.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
+import { buildTree } from '../user/utils/helper';
 
 @Injectable()
 export class RoleService {
   constructor(
     @InjectRepository(Role)
     private roleRepository: Repository<Role>,
-    @InjectRepository(Permission)
-    private permissionRepository: Repository<Permission>,
     @InjectRepository(Menu)
     private menuRepository: Repository<Menu>,
   ) {}
@@ -64,8 +67,22 @@ export class RoleService {
     const role = this.roleRepository.create({ name, description });
 
     if (authorize && authorize.length > 0) {
-      const menus = await this.menuRepository.findByIds(authorize);
-      role.menus = menus.filter((menu) => menu.isDeleted === 0);
+      // 获取菜单及其关联的权限
+      const menus = await this.menuRepository.find({
+        where: authorize.map((id) => ({ id })),
+        relations: ['permission'],
+      });
+      const validMenus = menus.filter((menu) => menu.isDeleted === 0);
+      role.menus = validMenus;
+
+      // 提取并关联权限
+      const permissions = validMenus
+        .map((menu) => menu.permission)
+        .filter(
+          (permission): permission is NonNullable<typeof permission> =>
+            permission !== null && permission !== undefined,
+        );
+      role.permissions = permissions;
     }
 
     return await this.roleRepository.save(role);
@@ -88,7 +105,9 @@ export class RoleService {
     const { name, description, authorize } = updateRoleDto;
 
     if (name !== role.name) {
-      const existingRole = await this.roleRepository.findOne({ where: { name } });
+      const existingRole = await this.roleRepository.findOne({
+        where: { name },
+      });
       if (existingRole) {
         throw new BadRequestException('Role name already exists');
       }
@@ -99,10 +118,25 @@ export class RoleService {
 
     if (authorize !== undefined) {
       if (authorize.length > 0) {
-        const menus = await this.menuRepository.findByIds(authorize);
-        role.menus = menus.filter((menu) => menu.isDeleted === 0);
+        // 获取菜单及其关联的权限
+        const menus = await this.menuRepository.find({
+          where: authorize.map((id) => ({ id })),
+          relations: ['permission'],
+        });
+        const validMenus = menus.filter((menu) => menu.isDeleted === 0);
+        role.menus = validMenus;
+
+        // 提取并关联权限
+        const permissions = validMenus
+          .map((menu) => menu.permission)
+          .filter(
+            (permission): permission is NonNullable<typeof permission> =>
+              permission !== null && permission !== undefined,
+          );
+        role.permissions = permissions;
       } else {
         role.menus = [];
+        role.permissions = [];
       }
     }
 
@@ -112,7 +146,7 @@ export class RoleService {
   async detail(id: number) {
     const role = await this.roleRepository.findOne({
       where: { id },
-      relations: ['menus', 'permissions'],
+      relations: ['menus'],
     });
 
     if (!role || role.isDeleted === 1) {
@@ -121,7 +155,8 @@ export class RoleService {
 
     return {
       ...role,
-      menuIds: role.menus?.map((menu) => menu.id) || [],
+      menus: undefined,
+      authorize: role.menus?.map((menu) => menu.id) || [],
     };
   }
 
@@ -151,7 +186,7 @@ export class RoleService {
   async getAuthorize(roleId: number) {
     const role = await this.roleRepository.findOne({
       where: { id: roleId },
-      relations: ['menus'],
+      relations: ['menus', 'menus.parent'],
     });
 
     if (!role || role.isDeleted === 1) {
@@ -159,17 +194,18 @@ export class RoleService {
     }
 
     const menuIds = role.menus?.map((menu) => menu.id) || [];
+    const treeData = buildTree(role.menus, null);
 
     return {
       defaultCheckedKeys: menuIds,
-      treeData: [],
+      treeData: treeData,
     };
   }
 
   async saveAuthorize(roleId: number, menuIds: number[]) {
     const role = await this.roleRepository.findOne({
       where: { id: roleId },
-      relations: ['menus'],
+      relations: ['menus', 'permissions'],
     });
 
     if (!role || role.isDeleted === 1) {
@@ -180,8 +216,22 @@ export class RoleService {
       throw new ForbiddenException('Cannot modify admin role authorization');
     }
 
-    const menus = await this.menuRepository.findByIds(menuIds);
-    role.menus = menus.filter((menu) => menu.isDeleted === 0);
+    // 获取菜单及其关联的权限
+    const menus = await this.menuRepository.find({
+      where: menuIds.map((id) => ({ id })),
+      relations: ['permission'],
+    });
+    const validMenus = menus.filter((menu) => menu.isDeleted === 0);
+    role.menus = validMenus;
+
+    // 提取并关联权限
+    const permissions = validMenus
+      .map((menu) => menu.permission)
+      .filter(
+        (permission): permission is NonNullable<typeof permission> =>
+          permission !== null && permission !== undefined,
+      );
+    role.permissions = permissions;
 
     await this.roleRepository.save(role);
   }

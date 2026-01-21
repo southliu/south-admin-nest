@@ -1,7 +1,20 @@
-import { Controller, Get, Post, Put, Delete, Body, Query, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Query,
+  Param,
+} from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { MenuService } from './menu.service';
-import { CreateMenuDto, UpdateMenuDto, ChangeMenuStateDto } from '../dto/menu.dto';
+import {
+  CreateMenuDto,
+  UpdateMenuDto,
+  ChangeMenuStateDto,
+} from '../dto/menu.dto';
 
 @Controller('system/menu')
 export class MenuController {
@@ -22,10 +35,10 @@ export class MenuController {
     return await this.menuService.create(createMenuDto);
   }
 
-  @Delete('delete/:id')
+  @Delete('/:id')
   async delete(@Param('id') id: number) {
     await this.menuService.delete(id);
-    return { message: 'Menu deleted successfully' };
+    return { message: '删除成功' };
   }
 
   @Put('update/:id')

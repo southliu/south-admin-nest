@@ -4,7 +4,7 @@ export class ApiResponse<T = any> {
   data?: T;
   timestamp: number;
 
-  static success<T>(data?: T, message: string = 'Success'): ApiResponse<T> {
+  static success<T>(data?: T, message: string = '操作成功'): ApiResponse<T> {
     return {
       code: 200,
       message,
@@ -13,7 +13,11 @@ export class ApiResponse<T = any> {
     };
   }
 
-  static error(message: string = 'Error', code: number = 500, data?: any): ApiResponse {
+  static error(
+    message: string = 'Error',
+    code: number = 500,
+    data?: any,
+  ): ApiResponse {
     return {
       code,
       message,

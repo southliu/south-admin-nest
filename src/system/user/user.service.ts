@@ -1,13 +1,25 @@
-import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like } from 'typeorm';
+import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '../entities/user.entity';
 import { Role } from '../entities/role.entity';
-import { Permission } from '../entities/permission.entity';
-import { LoginDto, CreateUserDto, UpdateUserDto, UpdatePasswordDto, PaginationDto } from '../dto/user.dto';
+import {
+  LoginDto,
+  CreateUserDto,
+  UpdateUserDto,
+  UpdatePasswordDto,
+  PaginationDto,
+} from '../dto/user.dto';
 import { UserInfo } from '../../common/decorators/current-user.decorator';
+import { Menu } from '../entities/menu.entity';
+import { buildTree } from './utils/helper';
 
 @Injectable()
 export class UserService {
@@ -16,8 +28,8 @@ export class UserService {
     private userRepository: Repository<User>,
     @InjectRepository(Role)
     private roleRepository: Repository<Role>,
-    @InjectRepository(Permission)
-    private permissionRepository: Repository<Permission>,
+    @InjectRepository(Menu)
+    private menuRepository: Repository<Menu>,
     private jwtService: JwtService,
   ) {}
 
@@ -30,12 +42,12 @@ export class UserService {
     });
 
     if (!user) {
-      throw new BadRequestException('Invalid username or password');
+      throw new BadRequestException('用户名或密码错误');
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      throw new BadRequestException('Invalid username or password');
+      throw new BadRequestException('用户名或密码错误');
     }
 
     if (user.status !== 1) {
@@ -43,7 +55,7 @@ export class UserService {
     }
 
     if (user.isDeleted === 1) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('用户不存在');
     }
 
     const payload: UserInfo = {
@@ -53,6 +65,7 @@ export class UserService {
       email: user.email,
       phone: user.phone,
       status: user.status,
+      roles: user.roles?.map((item) => item.id),
     };
 
     const token = await this.jwtService.signAsync(payload);
@@ -66,14 +79,14 @@ export class UserService {
     };
   }
 
-  async refreshPermissions(userId: number, refreshCache: boolean = false) {
+  async refreshPermissions(userId: number) {
     const user = await this.userRepository.findOne({
       where: { id: userId },
       relations: ['roles', 'roles.permissions', 'permissions'],
     });
 
     if (!user || user.isDeleted === 1) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('用户不存在');
     }
 
     const permissions = this.getUserPermissions(user);
@@ -87,6 +100,7 @@ export class UserService {
         email: user.email,
         phone: user.phone,
         status: user.status,
+        roles: user.roles?.map((role) => role.id),
       },
       permissions,
       roles,
@@ -103,7 +117,9 @@ export class UserService {
       .where('user.isDeleted = :isDeleted', { isDeleted: 0 });
 
     if (username) {
-      queryBuilder.andWhere('user.username LIKE :username', { username: `%${username}%` });
+      queryBuilder.andWhere('user.username LIKE :username', {
+        username: `%${username}%`,
+      });
     }
 
     const [items, total] = await queryBuilder
@@ -114,6 +130,7 @@ export class UserService {
 
     const itemsWithRoleCount = items.map((user) => ({
       ...user,
+      rolesName: (user.roles?.map((role) => role.name) || []).join(','),
       roleCount: user.roles?.length || 0,
     }));
 
@@ -133,7 +150,7 @@ export class UserService {
     });
 
     if (!user || user.isDeleted === 1) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('用户不存在');
     }
 
     return {
@@ -145,9 +162,11 @@ export class UserService {
   async create(createUserDto: CreateUserDto) {
     const { username, password, roleIds, ...rest } = createUserDto;
 
-    const existingUser = await this.userRepository.findOne({ where: { username } });
+    const existingUser = await this.userRepository.findOne({
+      where: { username },
+    });
     if (existingUser) {
-      throw new BadRequestException('Username already exists');
+      throw new BadRequestException('用户名已存在');
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -159,8 +178,19 @@ export class UserService {
     });
 
     if (roleIds && roleIds.length > 0) {
-      const roles = await this.roleRepository.findByIds(roleIds);
+      // 获取角色及其关联的权限
+      const roles = await this.roleRepository.find({
+        where: roleIds.map((id) => ({ id })),
+        relations: ['permissions'],
+      });
       user.roles = roles;
+
+      // 提取所有权限并关联到用户
+      const permissions = roles.flatMap((role) => role.permissions || []);
+      const uniquePermissions = Array.from(
+        new Map(permissions.map((p) => [p.id, p])).values(),
+      );
+      user.permissions = uniquePermissions;
     }
 
     return await this.userRepository.save(user);
@@ -169,15 +199,17 @@ export class UserService {
   async update(id: number, updateUserDto: UpdateUserDto) {
     const user = await this.userRepository.findOne({ where: { id } });
     if (!user || user.isDeleted === 1) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('用户不存在');
     }
 
     const { username, password, roleIds, ...rest } = updateUserDto;
 
     if (username !== user.username) {
-      const existingUser = await this.userRepository.findOne({ where: { username } });
+      const existingUser = await this.userRepository.findOne({
+        where: { username },
+      });
       if (existingUser) {
-        throw new BadRequestException('Username already exists');
+        throw new BadRequestException('用户名已存在');
       }
     }
 
@@ -190,8 +222,24 @@ export class UserService {
     Object.assign(user, rest);
 
     if (roleIds) {
-      const roles = await this.roleRepository.findByIds(roleIds);
-      user.roles = roles;
+      if (roleIds.length > 0) {
+        // 获取角色及其关联的权限
+        const roles = await this.roleRepository.find({
+          where: roleIds.map((id) => ({ id })),
+          relations: ['permissions'],
+        });
+        user.roles = roles;
+
+        // 提取所有权限并关联到用户
+        const permissions = roles.flatMap((role) => role.permissions || []);
+        const uniquePermissions = Array.from(
+          new Map(permissions.map((p) => [p.id, p])).values(),
+        );
+        user.permissions = uniquePermissions;
+      } else {
+        user.roles = [];
+        user.permissions = [];
+      }
     }
 
     return await this.userRepository.save(user);
@@ -200,7 +248,7 @@ export class UserService {
   async delete(id: number) {
     const user = await this.userRepository.findOne({ where: { id } });
     if (!user || user.isDeleted === 1) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('用户不存在');
     }
 
     user.isDeleted = 1;
@@ -219,17 +267,17 @@ export class UserService {
     const { oldPassword, newPassword, confirmPassword } = dto;
 
     if (newPassword !== confirmPassword) {
-      throw new BadRequestException('Passwords do not match');
+      throw new BadRequestException('新旧密码不一致');
     }
 
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user || user.isDeleted === 1) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('用户不存在');
     }
 
     const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
     if (!isPasswordValid) {
-      throw new BadRequestException('Invalid old password');
+      throw new BadRequestException('旧密码错误');
     }
 
     user.password = await bcrypt.hash(newPassword, 10);
@@ -243,10 +291,12 @@ export class UserService {
     });
 
     if (!user || user.isDeleted === 1) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('用户不存在');
     }
 
+    const menuTree = await this.getMenuTree();
     const menuIds = new Set<number>();
+
     user.roles?.forEach((role) => {
       role.menus?.forEach((menu) => {
         if (menu.isDeleted === 0) {
@@ -255,10 +305,26 @@ export class UserService {
       });
     });
 
+    // 轮询菜单树，如果子菜单有数据，则将父级菜单加入结果中
+
     return {
       defaultCheckedKeys: Array.from(menuIds),
-      treeData: [],
+      treeData: menuTree,
     };
+  }
+
+  // 获取权限菜单
+  async getMenuTree() {
+    const menus = await this.menuRepository
+      .createQueryBuilder('menu')
+      .leftJoinAndSelect('menu.parent', 'parent')
+      .leftJoinAndSelect('menu.permission', 'permission')
+      .where('menu.isDeleted = :isDeleted', { isDeleted: 0 })
+      .andWhere('menu.state = :state', { state: 1 })
+      .orderBy('menu.order', 'ASC')
+      .getMany();
+
+    return buildTree(menus, null);
   }
 
   async saveAuthorize(userId: number, menuIds: number[]) {
@@ -268,17 +334,20 @@ export class UserService {
     });
 
     if (!user || user.isDeleted === 1) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('用户不存在');
     }
 
     const roles = await this.roleRepository
       .createQueryBuilder('role')
       .leftJoinAndSelect('role.menus', 'menu')
-      .where('role.id IN (:...roleIds)', { roleIds: user.roles?.map((r) => r.id) || [] })
+      .where('role.id IN (:...roleIds)', {
+        roleIds: user.roles?.map((r) => r.id) || [],
+      })
       .getMany();
 
     roles.forEach((role) => {
-      role.menus = role.menus?.filter((menu) => menuIds.includes(menu.id)) || [];
+      role.menus =
+        role.menus?.filter((menu) => menuIds.includes(menu.id)) || [];
     });
 
     await this.roleRepository.save(roles);

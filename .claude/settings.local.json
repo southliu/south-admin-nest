@@ -10,7 +10,15 @@
       "Bash(pnpm install:*)",
       "Bash(pnpm run start:*)",
       "Bash(timeout:*)",
-      "Bash(ping:*)"
+      "Bash(ping:*)",
+      "Bash(curl:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(pnpm run start:dev:*)",
+      "Bash(pkill:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)"
     ]
   }
 }

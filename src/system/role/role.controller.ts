@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Put, Delete, Body, Query, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Query,
+  Param,
+} from '@nestjs/common';
 import { RoleService } from './role.service';
 import { CreateRoleDto, UpdateRoleDto } from '../dto/role.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
@@ -32,7 +41,7 @@ export class RoleController {
     return await this.roleService.list();
   }
 
-  @Delete('delete/:id')
+  @Delete('/:id')
   async delete(@Param('id') id: number) {
     await this.roleService.delete(id);
     return { message: 'Role deleted successfully' };

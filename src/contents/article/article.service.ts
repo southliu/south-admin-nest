@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Article } from '../entities/article.entity';
 import { CreateArticleDto, UpdateArticleDto } from '../dto/article.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
@@ -21,7 +21,9 @@ export class ArticleService {
       .where('article.isDeleted = :isDeleted', { isDeleted: 0 });
 
     if (title) {
-      queryBuilder.andWhere('article.title LIKE :title', { title: `%${title}%` });
+      queryBuilder.andWhere('article.title LIKE :title', {
+        title: `%${title}%`,
+      });
     }
 
     if (status !== undefined) {

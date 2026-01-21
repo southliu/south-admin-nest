@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Permission } from '../entities/permission.entity';
 import { PaginationDto } from '../dto/user.dto';
 
@@ -20,7 +20,9 @@ export class PermissionService {
       .where('permission.isDeleted = :isDeleted', { isDeleted: 0 });
 
     if (name) {
-      queryBuilder.andWhere('permission.name LIKE :name', { name: `%${name}%` });
+      queryBuilder.andWhere('permission.name LIKE :name', {
+        name: `%${name}%`,
+      });
     }
 
     const [items, total] = await queryBuilder
@@ -39,7 +41,9 @@ export class PermissionService {
   }
 
   async create(name: string, description?: string) {
-    const existingPermission = await this.permissionRepository.findOne({ where: { name } });
+    const existingPermission = await this.permissionRepository.findOne({
+      where: { name },
+    });
     if (existingPermission) {
       return existingPermission;
     }
@@ -49,7 +53,9 @@ export class PermissionService {
   }
 
   async detail(id: number) {
-    const permission = await this.permissionRepository.findOne({ where: { id } });
+    const permission = await this.permissionRepository.findOne({
+      where: { id },
+    });
 
     if (!permission || permission.isDeleted === 1) {
       throw new NotFoundException('Permission not found');
@@ -59,7 +65,9 @@ export class PermissionService {
   }
 
   async update(id: number, name: string, description?: string) {
-    const permission = await this.permissionRepository.findOne({ where: { id } });
+    const permission = await this.permissionRepository.findOne({
+      where: { id },
+    });
 
     if (!permission || permission.isDeleted === 1) {
       throw new NotFoundException('Permission not found');
@@ -71,7 +79,9 @@ export class PermissionService {
   }
 
   async delete(id: number) {
-    const permission = await this.permissionRepository.findOne({ where: { id } });
+    const permission = await this.permissionRepository.findOne({
+      where: { id },
+    });
 
     if (!permission || permission.isDeleted === 1) {
       throw new NotFoundException('Permission not found');

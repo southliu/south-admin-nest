@@ -1,10 +1,20 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, TreeRepository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Menu } from '../entities/menu.entity';
 import { Permission } from '../entities/permission.entity';
-import { CreateMenuDto, UpdateMenuDto, ChangeMenuStateDto } from '../dto/menu.dto';
+import {
+  CreateMenuDto,
+  UpdateMenuDto,
+  ChangeMenuStateDto,
+} from '../dto/menu.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
+import { User } from '../entities/user.entity';
+import { Role } from '../entities/role.entity';
 
 @Injectable()
 export class MenuService {
@@ -13,24 +23,102 @@ export class MenuService {
     private menuRepository: Repository<Menu>,
     @InjectRepository(Permission)
     private permissionRepository: Repository<Permission>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+    @InjectRepository(Role)
+    private roleRepository: Repository<Role>,
   ) {}
 
   async list(user?: any) {
-    const queryBuilder = this.menuRepository
-      .createQueryBuilder('menu')
-      .leftJoinAndSelect('menu.parent', 'parent')
-      .where('menu.isDeleted = :isDeleted', { isDeleted: 0 })
-      .andWhere('menu.state = :state', { state: 1 })
-      .orderBy('menu.order', 'ASC');
+    if (!user || !user.id) {
+      throw new BadRequestException('User information is required');
+    }
 
-    const menus = await queryBuilder.getMany();
+    const userInfo = await this.userRepository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.roles', 'roles')
+      .leftJoinAndSelect('roles.menus', 'roleMenus')
+      .where('user.id = :id', { id: user.id })
+      .getOne();
+    if (!userInfo) {
+      throw new NotFoundException('用户无权限！');
+    }
 
-    return this.buildTree(menus, null);
+    const roleIds = userInfo.roles.map((role) => role.id);
+
+    let roleMenuAssociations = [];
+
+    if (roleIds.length > 0) {
+      // 获取当前角色下面所有的菜单数据
+      roleMenuAssociations = await this.roleRepository
+        .createQueryBuilder('role')
+        .leftJoin('role.menus', 'menu')
+        .select(['role.id', 'menu.id'])
+        .where('role.id IN (:...roleIds)', { roleIds })
+        .getMany();
+
+      // 从关联数据中提取所有菜单ID
+      const associatedMenuIds = roleMenuAssociations
+        .flatMap(
+          (association) => association.menus?.map((menu) => menu.id) || [],
+        )
+        .filter((id, index, self) => self.indexOf(id) === index); // 去重
+
+      const menuQuery = this.menuRepository
+        .createQueryBuilder('menu')
+        .leftJoinAndSelect('menu.parent', 'parent')
+        .leftJoinAndSelect('menu.permission', 'permission')
+        .where('menu.isDeleted = :isDeleted', { isDeleted: 0 })
+        .andWhere('menu.state = :state', { state: 1 })
+        .andWhere('menu.type != :type', { type: 3 })
+        .orderBy('menu.order', 'ASC');
+
+      const allMenus = await menuQuery.getMany();
+
+      // 获取所有父级菜单ID
+      const allParentIds = allMenus
+        .filter((menu) => menu.parent)
+        .map((menu) => menu.parent.id);
+
+      // 确保要显示的菜单ID列表：包含关联的菜单ID + 它们的父级菜单ID
+      const menuIdsToShow = [
+        ...new Set([...associatedMenuIds, ...allParentIds]),
+      ];
+
+      // 过滤出需要显示的菜单
+      const filteredMenus = allMenus.filter((menu) =>
+        menuIdsToShow.includes(menu.id),
+      );
+
+      const uniqueMenus = Array.from(
+        new Map(filteredMenus.map((menu) => [menu.id, menu])).values(),
+      );
+
+      const transformedMenus = uniqueMenus.map((menu) => {
+        const menuObj = { ...menu };
+        if (menuObj.permission) {
+          menuObj.rule = menuObj.permission.name;
+          delete menuObj.permission;
+        }
+        menuObj.key = menuObj.router || menuObj.id.toString();
+        return menuObj;
+      });
+
+      return this.buildTree(transformedMenus, null);
+    } else {
+      return [];
+    }
   }
 
-  async page(dto: PaginationDto & { label?: string; labelEn?: string; state?: number; rule?: string }) {
-    const { page = 1, pageSize = 10, label, labelEn, state, rule } = dto;
-    const skip = (page - 1) * pageSize;
+  async page(
+    dto: PaginationDto & {
+      label?: string;
+      labelEn?: string;
+      state?: number;
+      rule?: string;
+    },
+  ) {
+    const { label, labelEn, state, rule } = dto;
 
     const queryBuilder = this.menuRepository
       .createQueryBuilder('menu')
@@ -43,7 +131,9 @@ export class MenuService {
     }
 
     if (labelEn) {
-      queryBuilder.andWhere('menu.labelEn LIKE :labelEn', { labelEn: `%${labelEn}%` });
+      queryBuilder.andWhere('menu.labelEn LIKE :labelEn', {
+        labelEn: `%${labelEn}%`,
+      });
     }
 
     if (state !== undefined) {
@@ -51,31 +141,64 @@ export class MenuService {
     }
 
     if (rule) {
-      queryBuilder.andWhere('menu.rule LIKE :rule', { rule: `%${rule}%` });
+      queryBuilder.andWhere('permission.name LIKE :rule', {
+        rule: `%${rule}%`,
+      });
     }
 
-    const [items, total] = await queryBuilder
-      .skip(skip)
-      .take(pageSize)
-      .orderBy('menu.order', 'ASC')
-      .getManyAndCount();
+    const items = await queryBuilder.orderBy('menu.order', 'ASC').getMany();
+
+    const transformedMenus = items.map((menu) => {
+      const menuObj: any = { ...menu };
+      if (menuObj.permission) {
+        menuObj.rule = menuObj.permission.name;
+        delete menuObj.permission;
+      }
+      return menuObj;
+    });
+
+    const tree = this.buildTree(transformedMenus, null);
 
     return {
-      items,
-      page,
-      pageSize,
-      total,
-      totalPages: Math.ceil(total / pageSize),
+      items: tree,
+      total: await this.countTreeNodes(),
     };
   }
 
-  async create(createMenuDto: CreateMenuDto) {
-    const { label, labelEn, type, icon, router, rule, order, state, parentId, actions } = createMenuDto;
+  private countTreeNodes() {
+    const menuBuilder = this.menuRepository
+      .createQueryBuilder('menu')
+      .where('menu.isDeleted = :isDeleted', { isDeleted: 0 })
+      .where(
+        '(menu.type = :type1 AND menu.parent_id IS NULL) OR (menu.type = :type2 AND menu.parent_id IS NULL)',
+        {
+          type1: 1,
+          type2: 2,
+        },
+      );
+    return menuBuilder.getCount();
+  }
 
-    const parent = parentId ? await this.menuRepository.findOne({ where: { id: parentId } }) : null;
+  async create(createMenuDto: CreateMenuDto) {
+    const {
+      label,
+      labelEn,
+      type,
+      icon,
+      router,
+      rule,
+      order,
+      state,
+      parentId,
+      actions,
+    } = createMenuDto;
+
+    const parent = parentId
+      ? await this.menuRepository.findOne({ where: { id: parentId } })
+      : null;
 
     if (parentId && (!parent || parent.isDeleted === 1)) {
-      throw new NotFoundException('Parent menu not found');
+      throw new NotFoundException('父级菜单不存在');
     }
 
     const menu = this.menuRepository.create({
@@ -93,7 +216,9 @@ export class MenuService {
     const savedMenu = await this.menuRepository.save(menu);
 
     if (rule) {
-      const existingPermission = await this.permissionRepository.findOne({ where: { name: rule } });
+      const existingPermission = await this.permissionRepository.findOne({
+        where: { name: rule },
+      });
       if (!existingPermission) {
         const permission = this.permissionRepository.create({
           name: rule,
@@ -129,7 +254,7 @@ export class MenuService {
     });
 
     if (!menu || menu.isDeleted === 1) {
-      throw new NotFoundException('Menu not found');
+      throw new NotFoundException('菜单不存在');
     }
 
     const children = await this.menuRepository
@@ -139,7 +264,7 @@ export class MenuService {
       .getCount();
 
     if (children > 0) {
-      throw new BadRequestException('Cannot delete menu with children');
+      throw new BadRequestException('不能删除有子菜单的菜单');
     }
 
     menu.isDeleted = 1;
@@ -154,20 +279,23 @@ export class MenuService {
     });
 
     if (!menu || menu.isDeleted === 1) {
-      throw new NotFoundException('Menu not found');
+      throw new NotFoundException('菜单不存在');
     }
 
-    const { label, labelEn, icon, router, rule, order, state, parentId } = updateMenuDto;
+    const { label, labelEn, type, icon, router, rule, order, state, parentId } =
+      updateMenuDto;
 
     if (parentId !== undefined) {
       if (parentId === id) {
-        throw new BadRequestException('Menu cannot be its own parent');
+        throw new BadRequestException('菜单不能是它自己的父菜单');
       }
 
       if (parentId !== null) {
-        const parent = await this.menuRepository.findOne({ where: { id: parentId } });
+        const parent = await this.menuRepository.findOne({
+          where: { id: parentId },
+        });
         if (!parent || parent.isDeleted === 1) {
-          throw new NotFoundException('Parent menu not found');
+          throw new NotFoundException('父级菜单不存在');
         }
         menu.parent = parent;
       } else {
@@ -177,6 +305,7 @@ export class MenuService {
 
     menu.label = label;
     menu.labelEn = labelEn;
+    menu.type = type !== undefined ? type : menu.type;
     menu.icon = icon;
     menu.router = router;
     menu.rule = rule;
@@ -184,7 +313,9 @@ export class MenuService {
     menu.state = state !== undefined ? state : menu.state;
 
     if (rule) {
-      const existingPermission = await this.permissionRepository.findOne({ where: { name: rule } });
+      const existingPermission = await this.permissionRepository.findOne({
+        where: { name: rule },
+      });
       if (!existingPermission) {
         const permission = this.permissionRepository.create({
           name: rule,
@@ -204,7 +335,7 @@ export class MenuService {
     });
 
     if (!menu || menu.isDeleted === 1) {
-      throw new NotFoundException('Menu not found');
+      throw new NotFoundException('菜单不存在');
     }
 
     return menu;
@@ -216,7 +347,7 @@ export class MenuService {
     const menu = await this.menuRepository.findOne({ where: { id } });
 
     if (!menu || menu.isDeleted === 1) {
-      throw new NotFoundException('Menu not found');
+      throw new NotFoundException('菜单不存在');
     }
 
     menu.state = state;
@@ -226,7 +357,8 @@ export class MenuService {
   private buildTree(menus: Menu[], parentId: number | null): Menu[] {
     const tree: Menu[] = [];
 
-    for (const menu of menus) {
+    for (let i = 0; i < menus?.length; i++) {
+      const menu = menus[i];
       const parentMenuId = menu.parent ? menu.parent.id : null;
 
       if (parentMenuId === parentId) {
@@ -239,7 +371,6 @@ export class MenuService {
         tree.push(menu);
       }
     }
-
     return tree;
   }
 }

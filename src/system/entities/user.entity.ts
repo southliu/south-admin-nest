@@ -1,11 +1,11 @@
-import { Entity, Column, ManyToMany, JoinTable, OneToMany } from 'typeorm';
+import { Entity, Column, ManyToMany, JoinTable } from 'typeorm';
 import { BaseEntity } from '../../common/entities/base.entity';
 import { Role } from './role.entity';
 import { Permission } from './permission.entity';
 
-@Entity('sys_user')
+@Entity('user')
 export class User extends BaseEntity {
-  @Column({ length: 50, unique: true })
+  @Column({ length: 50 })
   username: string;
 
   @Column({ length: 255 })
@@ -25,7 +25,7 @@ export class User extends BaseEntity {
 
   @ManyToMany(() => Role)
   @JoinTable({
-    name: 'sys_user_role',
+    name: 'user_role',
     joinColumn: { name: 'user_id', referencedColumnName: 'id' },
     inverseJoinColumn: { name: 'role_id', referencedColumnName: 'id' },
   })
@@ -33,7 +33,7 @@ export class User extends BaseEntity {
 
   @ManyToMany(() => Permission)
   @JoinTable({
-    name: 'sys_user_permission',
+    name: 'user_permission',
     joinColumn: { name: 'user_id', referencedColumnName: 'id' },
     inverseJoinColumn: { name: 'permission_id', referencedColumnName: 'id' },
   })

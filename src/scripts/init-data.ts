@@ -153,31 +153,33 @@ async function initDatabase() {
     // Insert default admin user
     const existingUser = await dataSource.query(
       'SELECT id FROM sys_user WHERE username = ?',
-      ['admin']
+      ['admin'],
     );
 
     if (existingUser.length === 0) {
       await dataSource.query(
         'INSERT INTO sys_user (username, password, name, status) VALUES (?, ?, ?, ?)',
-        ['admin', hashedPassword, 'Administrator', 1]
+        ['admin', hashedPassword, 'Administrator', 1],
       );
-      console.log('Default admin user created (username: admin, password: admin123)');
+      console.log(
+        'Default admin user created (username: admin, password: admin123)',
+      );
 
       // Create admin role
       const roleResult = await dataSource.query(
         'INSERT INTO sys_role (name, description) VALUES (?, ?)',
-        ['admin', 'Administrator role']
+        ['admin', 'Administrator role'],
       );
       const adminRoleId = roleResult.insertId;
 
       // Assign admin role to admin user
       const adminUser = await dataSource.query(
         'SELECT id FROM sys_user WHERE username = ?',
-        ['admin']
+        ['admin'],
       );
       await dataSource.query(
         'INSERT INTO sys_user_role (user_id, role_id) VALUES (?, ?)',
-        [adminUser[0].id, adminRoleId]
+        [adminUser[0].id, adminRoleId],
       );
 
       console.log('Admin role created and assigned to admin user');

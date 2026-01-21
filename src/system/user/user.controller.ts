@@ -1,6 +1,18 @@
-import { Controller, Get, Post, Put, Delete, Body, Query, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Query,
+  Param,
+} from '@nestjs/common';
 import { Public } from '../../common/decorators/public.decorator';
-import { CurrentUser, UserInfo } from '../../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  UserInfo,
+} from '../../common/decorators/current-user.decorator';
 import { UserService } from './user.service';
 import {
   LoginDto,
@@ -21,11 +33,8 @@ export class UserController {
   }
 
   @Get('refreshPermissions')
-  async refreshPermissions(
-    @CurrentUser() user: UserInfo,
-    @Query('refresh_cache') refreshCache?: string,
-  ) {
-    return await this.userService.refreshPermissions(user.id, refreshCache === 'true');
+  async refreshPermissions(@CurrentUser() user: UserInfo) {
+    return await this.userService.refreshPermissions(user.id);
   }
 
   @Get('page')
@@ -48,7 +57,7 @@ export class UserController {
     return await this.userService.update(id, updateUserDto);
   }
 
-  @Delete('delete/:id')
+  @Delete('/:id')
   async delete(@Param('id') id: number) {
     await this.userService.delete(id);
     return { message: 'User deleted successfully' };
@@ -60,7 +69,10 @@ export class UserController {
   }
 
   @Post('updatePassword')
-  async updatePassword(@CurrentUser() user: UserInfo, @Body() dto: UpdatePasswordDto) {
+  async updatePassword(
+    @CurrentUser() user: UserInfo,
+    @Body() dto: UpdatePasswordDto,
+  ) {
     await this.userService.updatePassword(user.id, dto);
     return { message: 'Password updated successfully' };
   }
@@ -75,4 +87,6 @@ export class UserController {
     await this.userService.saveAuthorize(body.userId, body.menuIds);
     return { message: 'Authorization saved successfully' };
   }
+
+  rolesName: string;
 }

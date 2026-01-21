@@ -29,7 +29,7 @@ import { Article } from './contents/entities/article.entity';
         password: configService.get('DB_PASSWORD'),
         database: configService.get('DB_DATABASE'),
         entities: [User, Role, Permission, Menu, Article],
-        synchronize: false,
+        synchronize: true,
         logging: true,
         timezone: '+08:00',
         charset: 'utf8mb4',

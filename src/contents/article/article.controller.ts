@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Put, Delete, Body, Query, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Query,
+  Param,
+} from '@nestjs/common';
 import { ArticleService } from './article.service';
 import { CreateArticleDto, UpdateArticleDto } from '../dto/article.dto';
 
@@ -22,11 +31,14 @@ export class ArticleController {
   }
 
   @Put('update/:id')
-  async update(@Param('id') id: number, @Body() updateArticleDto: UpdateArticleDto) {
+  async update(
+    @Param('id') id: number,
+    @Body() updateArticleDto: UpdateArticleDto,
+  ) {
     return await this.articleService.update(id, updateArticleDto);
   }
 
-  @Delete('delete/:id')
+  @Delete('/:id')
   async delete(@Param('id') id: number) {
     await this.articleService.delete(id);
     return { message: 'Article deleted successfully' };

@@ -53,6 +53,11 @@ export class UpdateMenuDto {
   labelEn: string;
 
   @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  type?: number;
+
+  @IsOptional()
   @IsString()
   icon?: string;
 

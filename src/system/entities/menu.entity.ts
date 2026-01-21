@@ -12,7 +12,7 @@ import { BaseEntity } from '../../common/entities/base.entity';
 import { Role } from './role.entity';
 import { Permission } from './permission.entity';
 
-@Entity('sys_menu')
+@Entity('menu')
 @Tree('closure-table')
 export class Menu extends BaseEntity {
   @Column({ length: 50 })
@@ -55,4 +55,6 @@ export class Menu extends BaseEntity {
 
   @ManyToMany(() => Role)
   roles: Role[];
+
+  key: string;
 }

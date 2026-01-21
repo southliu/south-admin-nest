@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Put, Delete, Body, Query, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Query,
+  Param,
+} from '@nestjs/common';
 import { PermissionService } from './permission.service';
 import { PaginationDto } from '../dto/user.dto';
 
@@ -29,7 +38,7 @@ export class PermissionController {
     return await this.permissionService.update(id, body.name, body.description);
   }
 
-  @Delete('delete/:id')
+  @Delete('/:id')
   async delete(@Param('id') id: number) {
     await this.permissionService.delete(id);
     return { message: 'Permission deleted successfully' };
