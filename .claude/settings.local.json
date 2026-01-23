@@ -18,7 +18,9 @@
       "Bash(pnpm run start:dev:*)",
       "Bash(pkill:*)",
       "Bash(lsof:*)",
-      "Bash(xargs kill:*)"
+      "Bash(xargs kill:*)",
+      "Bash(git config:*)",
+      "Bash(xargs:*)"
     ]
   }
 }
