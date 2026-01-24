@@ -30,6 +30,10 @@ export class Log extends BaseEntity {
   @Column({ type: 'int', nullable: true })
   latency: number;
 
-  @Column({ type: 'int', default: 1, comment: '0=error, 1=success' })
+  @Column({
+    type: 'int',
+    default: 1,
+    comment: '0=error, 1=success, 3=frontend',
+  })
   type: number;
 }

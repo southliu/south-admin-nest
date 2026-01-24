@@ -30,7 +30,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const message =
       exception instanceof HttpException
         ? exception.message
-        : 'Internal server error';
+        : '服务器错误，请联系管理员';
 
     const error =
       exception instanceof HttpException

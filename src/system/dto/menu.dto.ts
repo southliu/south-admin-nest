@@ -41,8 +41,8 @@ export class CreateMenuDto {
 
   @IsOptional()
   @IsArray()
-  @Type(() => Number)
-  actions?: number[];
+  @Type(() => String)
+  actions?: string[];
 }
 
 export class UpdateMenuDto {

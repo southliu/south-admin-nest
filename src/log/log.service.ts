@@ -12,7 +12,16 @@ export class LogService {
   ) {}
 
   async page(dto: QueryLogDto) {
-    const { page = 1, pageSize = 10, username, ip, url, status, type } = dto;
+    const {
+      page = 1,
+      pageSize = 10,
+      username,
+      ip,
+      url,
+      method,
+      status,
+      type,
+    } = dto;
     const skip = (page - 1) * pageSize;
 
     const queryBuilder = this.logRepository.createQueryBuilder('log');
@@ -31,9 +40,15 @@ export class LogService {
       queryBuilder.andWhere('log.url LIKE :url', { url: `%${url}%` });
     }
 
+    if (method) {
+      queryBuilder.andWhere('log.method LIKE :method', {
+        method,
+      });
+    }
+
     if (status) {
       queryBuilder.andWhere('log.status LIKE :status', {
-        status: `%${status}%`,
+        status,
       });
     }
 

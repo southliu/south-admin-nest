@@ -16,6 +16,10 @@ export class QueryLogDto extends PaginationDto {
 
   @IsOptional()
   @IsString()
+  method?: string;
+
+  @IsOptional()
+  @IsString()
   status?: string;
 
   @IsOptional()
@@ -24,14 +28,36 @@ export class QueryLogDto extends PaginationDto {
 }
 
 export class CreateLogDto {
+  @IsString()
   username: string;
+
+  @IsString()
   ip: string;
+
+  @IsString()
   method: string;
+
+  @IsString()
   url: string;
+
+  @IsString()
   params: string;
+
+  @IsString()
   userAgent: string;
+
+  @IsString()
   status: string;
+
+  @IsOptional()
+  @IsString()
   error?: string;
+
+  @IsOptional()
+  @IsNumber()
   latency?: number;
+
+  @IsOptional()
+  @IsNumber()
   type?: number; // 0=error, 1=success
 }

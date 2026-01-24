@@ -179,7 +179,7 @@ export class MenuService {
     return menuBuilder.getCount();
   }
 
-  async create(createMenuDto: CreateMenuDto) {
+  async create(createMenuDto: CreateMenuDto, user?: any) {
     const {
       label,
       labelEn,
@@ -215,6 +215,22 @@ export class MenuService {
 
     const savedMenu = await this.menuRepository.save(menu);
 
+    // 获取当前用户的角色
+    let userRoles: Role[] = [];
+    if (user && user.id) {
+      const userInfo = await this.userRepository
+        .createQueryBuilder('user')
+        .leftJoinAndSelect('user.roles', 'roles')
+        .where('user.id = :id', { id: user.id })
+        .getOne();
+
+      if (userInfo && userInfo.roles && userInfo.roles.length > 0) {
+        userRoles = userInfo.roles;
+      }
+    }
+
+    // 处理权限并关联到角色
+    let menuPermission: Permission | null = null;
     if (rule) {
       const existingPermission = await this.permissionRepository.findOne({
         where: { name: rule },
@@ -222,26 +238,143 @@ export class MenuService {
       if (!existingPermission) {
         const permission = this.permissionRepository.create({
           name: rule,
-          description: `Permission for menu: ${label}`,
+          description: label,
         });
-        menu.permission = await this.permissionRepository.save(permission);
-        await this.menuRepository.save(menu);
+        menuPermission = await this.permissionRepository.save(permission);
+        savedMenu.permission = menuPermission;
+        await this.menuRepository.save(savedMenu);
+      } else {
+        menuPermission = existingPermission;
+      }
+
+      // 将权限关联到用户的所有角色（累加，不去重）
+      if (userRoles.length > 0 && menuPermission) {
+        for (const role of userRoles) {
+          await this.roleRepository
+            .createQueryBuilder()
+            .insert()
+            .into('role_permission')
+            .values({
+              role_id: role.id,
+              permission_id: menuPermission.id,
+            })
+            .orIgnore()
+            .execute();
+        }
       }
     }
 
+    // 将菜单关联到用户的所有角色（累加，不去重）
+    if (userRoles.length > 0) {
+      for (const role of userRoles) {
+        await this.roleRepository
+          .createQueryBuilder()
+          .insert()
+          .into('role_menu')
+          .values({
+            role_id: role.id,
+            menu_id: savedMenu.id,
+          })
+          .orIgnore()
+          .execute();
+      }
+    }
+
+    // 处理按钮菜单
     if (actions && actions.length > 0) {
       const buttonType = 3;
       for (const action of actions) {
+        let actionLabel = '';
+        let actionLabelEn = '';
+        switch (action) {
+          case 'create':
+            actionLabel = '新增';
+            actionLabelEn = 'Create';
+            break;
+          case 'update':
+            actionLabel = '修改';
+            actionLabelEn = 'Update';
+            break;
+          case 'delete':
+            actionLabel = '删除';
+            actionLabelEn = 'Delete';
+            break;
+          case 'detail':
+            actionLabel = '详情';
+            actionLabelEn = 'Detail';
+            break;
+          case 'export':
+            actionLabel = '导出权限';
+            actionLabelEn = 'Export';
+            break;
+          case 'status':
+            actionLabel = '状态权限';
+            actionLabelEn = 'Status';
+            break;
+        }
+
         const buttonMenu = this.menuRepository.create({
-          label: action.toString(),
-          labelEn: action.toString(),
+          label: actionLabel,
+          labelEn: actionLabelEn,
           type: buttonType,
+          rule: `${rule}/${action}`,
           router: '',
           order: 0,
           state: 1,
           parent: savedMenu,
         });
-        await this.menuRepository.save(buttonMenu);
+        const savedButtonMenu = await this.menuRepository.save(buttonMenu);
+
+        // 为按钮菜单创建权限并关联到角色
+        const buttonPermissionName = `${rule}/${action}`;
+        const existingButtonPermission =
+          await this.permissionRepository.findOne({
+            where: { name: buttonPermissionName },
+          });
+
+        let buttonPermission: Permission | null = null;
+        if (!existingButtonPermission) {
+          buttonPermission = this.permissionRepository.create({
+            name: buttonPermissionName,
+            description: actionLabel,
+          });
+          buttonPermission =
+            await this.permissionRepository.save(buttonPermission);
+        } else {
+          buttonPermission = existingButtonPermission;
+        }
+
+        // 将按钮权限关联到用户的所有角色（累加，不去重）
+        if (userRoles.length > 0 && buttonPermission) {
+          for (const role of userRoles) {
+            await this.roleRepository
+              .createQueryBuilder()
+              .insert()
+              .into('role_permission')
+              .values({
+                role_id: role.id,
+                permission_id: buttonPermission.id,
+              })
+              .orIgnore()
+              .execute();
+          }
+        }
+
+        // 将按钮菜单关联到用户的所有角色（累加，不去重）
+        if (userRoles.length > 0) {
+          for (const role of userRoles) {
+            await this.roleRepository
+              .createQueryBuilder()
+              .insert()
+              .into('role_menu')
+              .values({
+                role_id: role.id,
+                menu_id: savedButtonMenu.id,
+              })
+              .orIgnore()
+              .execute();
+          }
+        }
       }
     }
 

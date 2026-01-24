@@ -31,8 +31,8 @@ export class MenuController {
   }
 
   @Post('create')
-  async create(@Body() createMenuDto: CreateMenuDto) {
-    return await this.menuService.create(createMenuDto);
+  async create(@CurrentUser() user: any, @Body() createMenuDto: CreateMenuDto) {
+    return await this.menuService.create(createMenuDto, user);
   }
 
   @Delete('/:id')
