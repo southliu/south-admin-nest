@@ -76,17 +76,4 @@ export class UserController {
     await this.userService.updatePassword(user.id, dto);
     return { message: 'Password updated successfully' };
   }
-
-  @Get('authorize')
-  async getAuthorize(@Query('userId') userId: number) {
-    return await this.userService.getAuthorize(userId);
-  }
-
-  @Put('authorize/save')
-  async saveAuthorize(@Body() body: { userId: number; menuIds: number[] }) {
-    await this.userService.saveAuthorize(body.userId, body.menuIds);
-    return { message: 'Authorization saved successfully' };
-  }
-
-  rolesName: string;
 }

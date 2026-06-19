@@ -18,8 +18,6 @@ import {
   PaginationDto,
 } from '../dto/user.dto';
 import { UserInfo } from '../../common/decorators/current-user.decorator';
-import { Menu } from '../entities/menu.entity';
-import { buildTree } from './utils/helper';
 
 @Injectable()
 export class UserService {
@@ -28,8 +26,6 @@ export class UserService {
     private userRepository: Repository<User>,
     @InjectRepository(Role)
     private roleRepository: Repository<Role>,
-    @InjectRepository(Menu)
-    private menuRepository: Repository<Menu>,
     private jwtService: JwtService,
   ) {}
 
@@ -38,7 +34,7 @@ export class UserService {
 
     const user = await this.userRepository.findOne({
       where: { username },
-      relations: ['roles', 'permissions'],
+      relations: ['roles', 'roles.menus', 'roles.menus.permission'],
     });
 
     if (!user) {
@@ -82,7 +78,7 @@ export class UserService {
   async refreshPermissions(userId: number) {
     const user = await this.userRepository.findOne({
       where: { id: userId },
-      relations: ['roles', 'roles.permissions', 'permissions'],
+      relations: ['roles', 'roles.menus', 'roles.menus.permission'],
     });
 
     if (!user || user.isDeleted === 1) {
@@ -178,19 +174,10 @@ export class UserService {
     });
 
     if (roleIds && roleIds.length > 0) {
-      // 获取角色及其关联的权限
       const roles = await this.roleRepository.find({
         where: roleIds.map((id) => ({ id })),
-        relations: ['permissions'],
       });
       user.roles = roles;
-
-      // 提取所有权限并关联到用户
-      const permissions = roles.flatMap((role) => role.permissions || []);
-      const uniquePermissions = Array.from(
-        new Map(permissions.map((p) => [p.id, p])).values(),
-      );
-      user.permissions = uniquePermissions;
     }
 
     return await this.userRepository.save(user);
@@ -221,24 +208,14 @@ export class UserService {
 
     Object.assign(user, rest);
 
-    if (roleIds) {
+    if (roleIds !== undefined) {
       if (roleIds.length > 0) {
-        // 获取角色及其关联的权限
         const roles = await this.roleRepository.find({
           where: roleIds.map((id) => ({ id })),
-          relations: ['permissions'],
         });
         user.roles = roles;
-
-        // 提取所有权限并关联到用户
-        const permissions = roles.flatMap((role) => role.permissions || []);
-        const uniquePermissions = Array.from(
-          new Map(permissions.map((p) => [p.id, p])).values(),
-        );
-        user.permissions = uniquePermissions;
       } else {
         user.roles = [];
-        user.permissions = [];
       }
     }
 
@@ -284,88 +261,17 @@ export class UserService {
     await this.userRepository.save(user);
   }
 
-  async getAuthorize(userId: number) {
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-      relations: ['roles', 'roles.menus'],
-    });
-
-    if (!user || user.isDeleted === 1) {
-      throw new NotFoundException('用户不存在');
-    }
-
-    const menuTree = await this.getMenuTree();
-    const menuIds = new Set<number>();
+  private getUserPermissions(user: User): string[] {
+    const permissionSet = new Set<string>();
 
     user.roles?.forEach((role) => {
       role.menus?.forEach((menu) => {
-        if (menu.isDeleted === 0) {
-          menuIds.add(menu.id);
+        if (menu.permission) {
+          permissionSet.add(menu.permission.name);
         }
       });
     });
 
-    // 轮询菜单树，如果子菜单有数据，则将父级菜单加入结果中
-
-    return {
-      defaultCheckedKeys: Array.from(menuIds),
-      treeData: menuTree,
-    };
-  }
-
-  // 获取权限菜单
-  async getMenuTree() {
-    const menus = await this.menuRepository
-      .createQueryBuilder('menu')
-      .leftJoinAndSelect('menu.parent', 'parent')
-      .leftJoinAndSelect('menu.permission', 'permission')
-      .where('menu.isDeleted = :isDeleted', { isDeleted: 0 })
-      .andWhere('menu.state = :state', { state: 1 })
-      .orderBy('menu.order', 'ASC')
-      .getMany();
-
-    return buildTree(menus, null);
-  }
-
-  async saveAuthorize(userId: number, menuIds: number[]) {
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-      relations: ['roles'],
-    });
-
-    if (!user || user.isDeleted === 1) {
-      throw new NotFoundException('用户不存在');
-    }
-
-    const roles = await this.roleRepository
-      .createQueryBuilder('role')
-      .leftJoinAndSelect('role.menus', 'menu')
-      .where('role.id IN (:...roleIds)', {
-        roleIds: user.roles?.map((r) => r.id) || [],
-      })
-      .getMany();
-
-    roles.forEach((role) => {
-      role.menus =
-        role.menus?.filter((menu) => menuIds.includes(menu.id)) || [];
-    });
-
-    await this.roleRepository.save(roles);
-  }
-
-  private getUserPermissions(user: User): string[] {
-    const permissions = new Set<string>();
-
-    user.permissions?.forEach((p) => {
-      permissions.add(p.name);
-    });
-
-    user.roles?.forEach((role) => {
-      role.permissions?.forEach((p) => {
-        permissions.add(p.name);
-      });
-    });
-
-    return Array.from(permissions);
+    return Array.from(permissionSet);
   }
 }

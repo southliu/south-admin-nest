@@ -20,7 +20,11 @@
       "Bash(lsof:*)",
       "Bash(xargs kill:*)",
       "Bash(git config:*)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "Bash(where:*)",
+      "Bash(pnpm run ts-node:*)",
+      "Bash(npx ts-node:*)"
     ]
-  }
+  },
+  "spinnerTipsEnabled": false
 }

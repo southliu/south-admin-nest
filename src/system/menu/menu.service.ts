@@ -246,22 +246,6 @@ export class MenuService {
       } else {
         menuPermission = existingPermission;
       }
-
-      // 将权限关联到用户的所有角色（累加，不去重）
-      if (userRoles.length > 0 && menuPermission) {
-        for (const role of userRoles) {
-          await this.roleRepository
-            .createQueryBuilder()
-            .insert()
-            .into('role_permission')
-            .values({
-              role_id: role.id,
-              permission_id: menuPermission.id,
-            })
-            .orIgnore()
-            .execute();
-        }
-      }
     }
 
     // 将菜单关联到用户的所有角色（累加，不去重）
@@ -342,22 +326,6 @@ export class MenuService {
             await this.permissionRepository.save(buttonPermission);
         } else {
           buttonPermission = existingButtonPermission;
-        }
-
-        // 将按钮权限关联到用户的所有角色（累加，不去重）
-        if (userRoles.length > 0 && buttonPermission) {
-          for (const role of userRoles) {
-            await this.roleRepository
-              .createQueryBuilder()
-              .insert()
-              .into('role_permission')
-              .values({
-                role_id: role.id,
-                permission_id: buttonPermission.id,
-              })
-              .orIgnore()
-              .execute();
-          }
         }
 
         // 将按钮菜单关联到用户的所有角色（累加，不去重）

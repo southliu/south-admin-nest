@@ -92,16 +92,6 @@ export class UpdatePasswordDto {
   confirmPassword: string;
 }
 
-export class AuthorizeUserDto {
-  @Type(() => Number)
-  @IsInt()
-  userId: number;
-
-  @IsArray()
-  @Type(() => Number)
-  menuIds: number[];
-}
-
 export class PaginationDto {
   @IsOptional()
   @Type(() => Number)

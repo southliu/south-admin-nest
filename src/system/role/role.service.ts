@@ -27,7 +27,6 @@ export class RoleService {
 
     const queryBuilder = this.roleRepository
       .createQueryBuilder('role')
-      .leftJoinAndSelect('role.permissions', 'permission')
       .leftJoinAndSelect('role.menus', 'menu')
       .where('role.isDeleted = :isDeleted', { isDeleted: 0 });
 
@@ -43,7 +42,6 @@ export class RoleService {
 
     const itemsWithCounts = items.map((role) => ({
       ...role,
-      permissionCount: role.permissions?.length || 0,
       menuCount: role.menus?.length || 0,
     }));
 
@@ -67,22 +65,11 @@ export class RoleService {
     const role = this.roleRepository.create({ name, description });
 
     if (authorize && authorize.length > 0) {
-      // 获取菜单及其关联的权限
       const menus = await this.menuRepository.find({
         where: authorize.map((id) => ({ id })),
-        relations: ['permission'],
       });
       const validMenus = menus.filter((menu) => menu.isDeleted === 0);
       role.menus = validMenus;
-
-      // 提取并关联权限
-      const permissions = validMenus
-        .map((menu) => menu.permission)
-        .filter(
-          (permission): permission is NonNullable<typeof permission> =>
-            permission !== null && permission !== undefined,
-        );
-      role.permissions = permissions;
     }
 
     return await this.roleRepository.save(role);
@@ -91,7 +78,7 @@ export class RoleService {
   async update(id: number, updateRoleDto: UpdateRoleDto) {
     const role = await this.roleRepository.findOne({
       where: { id },
-      relations: ['menus', 'permissions'],
+      relations: ['menus'],
     });
 
     if (!role || role.isDeleted === 1) {
@@ -118,25 +105,13 @@ export class RoleService {
 
     if (authorize !== undefined) {
       if (authorize.length > 0) {
-        // 获取菜单及其关联的权限
         const menus = await this.menuRepository.find({
           where: authorize.map((id) => ({ id })),
-          relations: ['permission'],
         });
         const validMenus = menus.filter((menu) => menu.isDeleted === 0);
         role.menus = validMenus;
-
-        // 提取并关联权限
-        const permissions = validMenus
-          .map((menu) => menu.permission)
-          .filter(
-            (permission): permission is NonNullable<typeof permission> =>
-              permission !== null && permission !== undefined,
-          );
-        role.permissions = permissions;
       } else {
         role.menus = [];
-        role.permissions = [];
       }
     }
 
@@ -205,7 +180,7 @@ export class RoleService {
   async saveAuthorize(roleId: number, menuIds: number[]) {
     const role = await this.roleRepository.findOne({
       where: { id: roleId },
-      relations: ['menus', 'permissions'],
+      relations: ['menus'],
     });
 
     if (!role || role.isDeleted === 1) {
@@ -216,22 +191,11 @@ export class RoleService {
       throw new ForbiddenException('Cannot modify admin role authorization');
     }
 
-    // 获取菜单及其关联的权限
     const menus = await this.menuRepository.find({
       where: menuIds.map((id) => ({ id })),
-      relations: ['permission'],
     });
     const validMenus = menus.filter((menu) => menu.isDeleted === 0);
     role.menus = validMenus;
-
-    // 提取并关联权限
-    const permissions = validMenus
-      .map((menu) => menu.permission)
-      .filter(
-        (permission): permission is NonNullable<typeof permission> =>
-          permission !== null && permission !== undefined,
-      );
-    role.permissions = permissions;
 
     await this.roleRepository.save(role);
   }

@@ -29,12 +29,3 @@ export class UpdateRoleDto {
   authorize?: number[];
 }
 
-export class AuthorizeRoleDto {
-  @Type(() => Number)
-  @IsInt()
-  roleId: number;
-
-  @IsArray()
-  @Type(() => Number)
-  menuIds: number[];
-}
