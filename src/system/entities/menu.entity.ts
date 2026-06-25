@@ -12,7 +12,7 @@ import { BaseEntity } from '../../common/entities/base.entity';
 import { Role } from './role.entity';
 import { Permission } from './permission.entity';
 
-@Entity('menu')
+@Entity('sys_menu')
 @Tree('closure-table')
 export class Menu extends BaseEntity {
   @Column({ length: 50 })
@@ -29,9 +29,6 @@ export class Menu extends BaseEntity {
 
   @Column({ length: 255, nullable: true })
   router: string;
-
-  @Column({ length: 255, nullable: true })
-  rule: string;
 
   @Column({ type: 'int', default: 0 })
   order: number;

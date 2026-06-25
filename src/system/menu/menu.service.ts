@@ -96,10 +96,6 @@ export class MenuService {
 
       const transformedMenus = uniqueMenus.map((menu) => {
         const menuObj = { ...menu };
-        if (menuObj.permission) {
-          menuObj.rule = menuObj.permission.name;
-          delete menuObj.permission;
-        }
         menuObj.key = menuObj.router || menuObj.id.toString();
         return menuObj;
       });
@@ -115,10 +111,10 @@ export class MenuService {
       label?: string;
       labelEn?: string;
       state?: number;
-      rule?: string;
+      permissionId?: number;
     },
   ) {
-    const { label, labelEn, state, rule } = dto;
+    const { label, labelEn, state, permissionId } = dto;
 
     const queryBuilder = this.menuRepository
       .createQueryBuilder('menu')
@@ -140,9 +136,9 @@ export class MenuService {
       queryBuilder.andWhere('menu.state = :state', { state });
     }
 
-    if (rule) {
-      queryBuilder.andWhere('permission.name LIKE :rule', {
-        rule: `%${rule}%`,
+    if (permissionId) {
+      queryBuilder.andWhere('permission.id = :permissionId', {
+        permissionId,
       });
     }
 
@@ -150,10 +146,6 @@ export class MenuService {
 
     const transformedMenus = items.map((menu) => {
       const menuObj: any = { ...menu };
-      if (menuObj.permission) {
-        menuObj.rule = menuObj.permission.name;
-        delete menuObj.permission;
-      }
       return menuObj;
     });
 
@@ -186,7 +178,7 @@ export class MenuService {
       type,
       icon,
       router,
-      rule,
+      permissionId,
       order,
       state,
       parentId,
@@ -207,7 +199,6 @@ export class MenuService {
       type,
       icon,
       router,
-      rule,
       order: order || 0,
       state: state !== undefined ? state : 1,
       parent,
@@ -229,22 +220,14 @@ export class MenuService {
       }
     }
 
-    // 处理权限并关联到角色
-    let menuPermission: Permission | null = null;
-    if (rule) {
-      const existingPermission = await this.permissionRepository.findOne({
-        where: { name: rule },
+    // 关联权限
+    if (permissionId) {
+      const permission = await this.permissionRepository.findOne({
+        where: { id: permissionId },
       });
-      if (!existingPermission) {
-        const permission = this.permissionRepository.create({
-          name: rule,
-          description: label,
-        });
-        menuPermission = await this.permissionRepository.save(permission);
-        savedMenu.permission = menuPermission;
+      if (permission) {
+        savedMenu.permission = permission;
         await this.menuRepository.save(savedMenu);
-      } else {
-        menuPermission = existingPermission;
       }
     }
 
@@ -254,7 +237,7 @@ export class MenuService {
         await this.roleRepository
           .createQueryBuilder()
           .insert()
-          .into('role_menu')
+          .into('sys_role_menu')
           .values({
             role_id: role.id,
             menu_id: savedMenu.id,
@@ -301,7 +284,6 @@ export class MenuService {
           label: actionLabel,
           labelEn: actionLabelEn,
           type: buttonType,
-          rule: `${rule}/${action}`,
           router: '',
           order: 0,
           state: 1,
@@ -310,7 +292,7 @@ export class MenuService {
         const savedButtonMenu = await this.menuRepository.save(buttonMenu);
 
         // 为按钮菜单创建权限并关联到角色
-        const buttonPermissionName = `${rule}/${action}`;
+        const buttonPermissionName = `${label}/${action}`;
         const existingButtonPermission =
           await this.permissionRepository.findOne({
             where: { name: buttonPermissionName },
@@ -328,13 +310,17 @@ export class MenuService {
           buttonPermission = existingButtonPermission;
         }
 
+        // 关联按钮菜单的权限
+        savedButtonMenu.permission = buttonPermission;
+        await this.menuRepository.save(savedButtonMenu);
+
         // 将按钮菜单关联到用户的所有角色（累加，不去重）
         if (userRoles.length > 0) {
           for (const role of userRoles) {
             await this.roleRepository
               .createQueryBuilder()
               .insert()
-              .into('role_menu')
+              .into('sys_role_menu')
               .values({
                 role_id: role.id,
                 menu_id: savedButtonMenu.id,
@@ -383,7 +369,7 @@ export class MenuService {
       throw new NotFoundException('菜单不存在');
     }
 
-    const { label, labelEn, type, icon, router, rule, order, state, parentId } =
+    const { label, labelEn, type, icon, router, permissionId, order, state, parentId } =
       updateMenuDto;
 
     if (parentId !== undefined) {
@@ -409,20 +395,19 @@ export class MenuService {
     menu.type = type !== undefined ? type : menu.type;
     menu.icon = icon;
     menu.router = router;
-    menu.rule = rule;
     menu.order = order !== undefined ? order : menu.order;
     menu.state = state !== undefined ? state : menu.state;
 
-    if (rule) {
-      const existingPermission = await this.permissionRepository.findOne({
-        where: { name: rule },
-      });
-      if (!existingPermission) {
-        const permission = this.permissionRepository.create({
-          name: rule,
-          description: `Permission for menu: ${label}`,
+    if (permissionId !== undefined) {
+      if (permissionId) {
+        const permission = await this.permissionRepository.findOne({
+          where: { id: permissionId },
         });
-        menu.permission = await this.permissionRepository.save(permission);
+        if (permission) {
+          menu.permission = permission;
+        }
+      } else {
+        menu.permission = null;
       }
     }
 

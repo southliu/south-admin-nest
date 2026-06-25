@@ -2,9 +2,9 @@ import { Entity, Column, ManyToMany, JoinTable } from 'typeorm';
 import { BaseEntity } from '../../common/entities/base.entity';
 import { Role } from './role.entity';
 
-@Entity('user')
+@Entity('sys_user')
 export class User extends BaseEntity {
-  @Column({ length: 50 })
+  @Column({ length: 100 })
   username: string;
 
   @Column({ length: 255 })
@@ -24,7 +24,7 @@ export class User extends BaseEntity {
 
   @ManyToMany(() => Role)
   @JoinTable({
-    name: 'user_role',
+    name: 'sys_user_role',
     joinColumn: { name: 'user_id', referencedColumnName: 'id' },
     inverseJoinColumn: { name: 'role_id', referencedColumnName: 'id' },
   })

@@ -21,8 +21,9 @@ export class CreateMenuDto {
   router?: string;
 
   @IsOptional()
-  @IsString()
-  rule?: string;
+  @Type(() => Number)
+  @IsInt()
+  permissionId?: number;
 
   @IsOptional()
   @Type(() => Number)
@@ -66,8 +67,9 @@ export class UpdateMenuDto {
   router?: string;
 
   @IsOptional()
-  @IsString()
-  rule?: string;
+  @Type(() => Number)
+  @IsInt()
+  permissionId?: number;
 
   @IsOptional()
   @Type(() => Number)

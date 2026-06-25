@@ -10,10 +10,10 @@ export class BaseEntity {
   @PrimaryGeneratedColumn('increment', { type: 'bigint' })
   id: number;
 
-  @CreateDateColumn({ type: 'datetime', name: 'created_at' })
+  @CreateDateColumn({ type: 'datetime', name: 'create_at' })
   createdAt: Date;
 
-  @UpdateDateColumn({ type: 'datetime', name: 'updated_at' })
+  @UpdateDateColumn({ type: 'datetime', name: 'update_at' })
   updatedAt: Date;
 
   @Column({
