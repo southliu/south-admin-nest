@@ -4,16 +4,12 @@ import {
   ManyToMany,
   ManyToOne,
   JoinColumn,
-  Tree,
-  TreeParent,
-  TreeChildren,
 } from 'typeorm';
 import { BaseEntity } from '../../common/entities/base.entity';
 import { Role } from './role.entity';
 import { Permission } from './permission.entity';
 
 @Entity('sys_menu')
-@Tree('closure-table')
 export class Menu extends BaseEntity {
   @Column({ length: 50 })
   label: string;
@@ -40,12 +36,6 @@ export class Menu extends BaseEntity {
   @JoinColumn({ name: 'parent_id' })
   parent: Menu;
 
-  @TreeParent()
-  parentMenu: Menu;
-
-  @TreeChildren()
-  children: Menu[];
-
   @ManyToOne(() => Permission, { nullable: true })
   @JoinColumn({ name: 'permission_id' })
   permission: Permission;
@@ -54,4 +44,5 @@ export class Menu extends BaseEntity {
   roles: Role[];
 
   key: string;
+  children?: Menu[];
 }

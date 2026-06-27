@@ -34,14 +34,18 @@ $ pnpm run test:e2e
 $ pnpm run test:cov
 ```
 
-## 数据库操作
-运行项目之后自动生成数据库表，数据库导入`init.sql`文件。
+## 初始化数据库
+
+运行项目之后自动生成数据库表，执行命令`pnpm db:init`或者数据库导入`init.sql`文件。
 
 ## 前端项目
+
 react: [react-admin](https://github.com/southliu/south-admin-react)
 
 ## 前后端联调
+
 启动dajgo项目之后需要将react-admin项目中的`.env.development`改成：
+
 ```
 VITE_ENV = "development"
 
