@@ -95,12 +95,25 @@ export class MenuService {
       );
 
       const transformedMenus = uniqueMenus.map((menu) => {
-        const menuObj = { ...menu };
+        const menuObj: any = { ...menu };
+        menuObj.title = menuObj.label;
+        menuObj.titleEn = menuObj.labelEn;
         menuObj.key = menuObj.router || menuObj.id.toString();
+        menuObj.value = String(menuObj.id);
+        menuObj.parentId = menuObj.parent?.id ?? null;
+        if (menuObj.permission) {
+          menuObj.rule = menuObj.permission.name;
+          menuObj.permissionId = menuObj.permission.id;
+          delete menuObj.permission;
+        } else {
+          menuObj.rule = null;
+          menuObj.permissionId = null;
+        }
         return menuObj;
       });
 
-      return this.buildTree(transformedMenus, null);
+      const tree = this.buildTree(transformedMenus, null);
+      return this.cleanTree(tree);
     } else {
       return [];
     }
@@ -146,29 +159,32 @@ export class MenuService {
 
     const transformedMenus = items.map((menu) => {
       const menuObj: any = { ...menu };
+      menuObj.title = menuObj.label;
+      menuObj.titleEn = menuObj.labelEn;
+      menuObj.key = menuObj.router || menuObj.id.toString();
+      menuObj.value = String(menuObj.id);
+      menuObj.parentId = menuObj.parent?.id ?? null;
+      if (menuObj.permission) {
+        menuObj.rule = menuObj.permission.name;
+        menuObj.permissionId = menuObj.permission.id;
+        delete menuObj.permission;
+      } else {
+        menuObj.rule = null;
+        menuObj.permissionId = null;
+      }
       return menuObj;
     });
 
     const tree = this.buildTree(transformedMenus, null);
+    const cleanedTree = this.cleanTree(tree);
 
     return {
-      items: tree,
-      total: await this.countTreeNodes(),
+      items: cleanedTree,
+      total: await this.menuRepository
+        .createQueryBuilder('menu')
+        .where('menu.isDeleted = :isDeleted', { isDeleted: 0 })
+        .getCount(),
     };
-  }
-
-  private countTreeNodes() {
-    const menuBuilder = this.menuRepository
-      .createQueryBuilder('menu')
-      .where('menu.isDeleted = :isDeleted', { isDeleted: 0 })
-      .where(
-        '(menu.type = :type1 AND menu.parent_id IS NULL) OR (menu.type = :type2 AND menu.parent_id IS NULL)',
-        {
-          type1: 1,
-          type2: 2,
-        },
-      );
-    return menuBuilder.getCount();
   }
 
   async create(createMenuDto: CreateMenuDto, user?: any) {
@@ -458,5 +474,17 @@ export class MenuService {
       }
     }
     return tree;
+  }
+
+  private cleanTree(menus: any[]): any[] {
+    return menus.map((menu) => {
+      const { parent, ...rest } = menu;
+      if (rest.children?.length) {
+        rest.children = this.cleanTree(rest.children);
+      } else {
+        delete rest.children;
+      }
+      return rest;
+    });
   }
 }

@@ -18,6 +18,7 @@ import {
   PaginationDto,
 } from '../dto/user.dto';
 import { UserInfo } from '../../common/decorators/current-user.decorator';
+import { ApiResponse } from '../../common/responses/api-response.dto';
 
 @Injectable()
 export class UserService {
@@ -68,11 +69,20 @@ export class UserService {
 
     const permissions = this.getUserPermissions(user);
 
-    return {
-      user: payload,
-      token,
-      permissions,
-    };
+    return ApiResponse.success(
+      {
+        token,
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          phone: user.phone,
+        },
+        roles: user.roles?.map((role) => String(role.id)) || [],
+        permissions,
+      },
+      '登录成功',
+    );
   }
 
   async refreshPermissions(userId: number) {

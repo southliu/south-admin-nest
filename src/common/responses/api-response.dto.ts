@@ -1,16 +1,18 @@
 export class ApiResponse<T = any> {
   code: number;
   message: string;
+  msg?: string;
   data?: T;
   timestamp: number;
 
   static success<T>(data?: T, message: string = '操作成功'): ApiResponse<T> {
-    return {
-      code: 200,
-      message,
-      data,
-      timestamp: Date.now(),
-    };
+    const response = new ApiResponse<T>();
+    response.code = 200;
+    response.message = message;
+    response.msg = message;
+    response.data = data;
+    response.timestamp = Date.now();
+    return response;
   }
 
   static error(
