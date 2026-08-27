@@ -19,7 +19,7 @@ import {
   CreateUserDto,
   UpdateUserDto,
   UpdatePasswordDto,
-  PaginationDto,
+  UserPageDto,
 } from '../dto/user.dto';
 
 @Controller('system/user')
@@ -38,7 +38,7 @@ export class UserController {
   }
 
   @Get('page')
-  async page(@Query() dto: PaginationDto & { username?: string }) {
+  async page(@Query() dto: UserPageDto) {
     return await this.userService.page(dto);
   }
 
@@ -61,6 +61,12 @@ export class UserController {
   async delete(@Param('id') id: number) {
     await this.userService.delete(id);
     return { message: 'User deleted successfully' };
+  }
+
+  @Post('batchDelete')
+  async deleteBatch(@Body('ids') ids: number[]) {
+    await this.userService.deleteBatch(ids);
+    return { message: '批量删除成功' };
   }
 
   @Get('list')

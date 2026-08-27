@@ -10,7 +10,7 @@ import {
 import { LogService } from './log.service';
 import { QueryLogDto, CreateLogDto } from './dto/log.dto';
 
-@Controller('log')
+@Controller('system/log')
 export class LogController {
   constructor(private readonly logService: LogService) {}
 

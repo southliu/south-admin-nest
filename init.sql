@@ -141,22 +141,22 @@ SELECT '文章管理', 'Article Management', 2, NULL, '/content/article', 0, 1, 
 SET @user_menu_id = (SELECT id FROM menu WHERE router = '/system/user');
 
 INSERT INTO menu (label, label_en, type, icon, router, `order`, state, created_at, updated_at, parent_id, is_deleted, permission_id)
-SELECT '用户列表', 'Index', 3, NULL, 0, 1, NOW(), NOW(), @user_menu_id, 0, id FROM permission WHERE name = '/authority/user/index';
+SELECT '用户列表', 'Index', 3, NULL, NULL, 0, 1, NOW(), NOW(), @user_menu_id, 0, id FROM permission WHERE name = '/authority/user/index';
 
 INSERT INTO menu (label, label_en, type, icon, router, `order`, state, created_at, updated_at, parent_id, is_deleted, permission_id)
-SELECT '查看用户', 'View', 3, NULL, 1, 1, NOW(), NOW(), @user_menu_id, 0, id FROM permission WHERE name = '/authority/user/view';
+SELECT '查看用户', 'View', 3, NULL, NULL, 1, 1, NOW(), NOW(), @user_menu_id, 0, id FROM permission WHERE name = '/authority/user/view';
 
 INSERT INTO menu (label, label_en, type, icon, router, `order`, state, created_at, updated_at, parent_id, is_deleted, permission_id)
-SELECT '创建用户', 'Create', 3, NULL, 2, 1, NOW(), NOW(), @user_menu_id, 0, id FROM permission WHERE name = '/authority/user/create';
+SELECT '创建用户', 'Create', 3, NULL, NULL, 2, 1, NOW(), NOW(), @user_menu_id, 0, id FROM permission WHERE name = '/authority/user/create';
 
 INSERT INTO menu (label, label_en, type, icon, router, `order`, state, created_at, updated_at, parent_id, is_deleted, permission_id)
-SELECT '修改用户', 'Update', 3, NULL, 3, 1, NOW(), NOW(), @user_menu_id, 0, id FROM permission WHERE name = '/authority/user/update';
+SELECT '修改用户', 'Update', 3, NULL, NULL, 3, 1, NOW(), NOW(), @user_menu_id, 0, id FROM permission WHERE name = '/authority/user/update';
 
 INSERT INTO menu (label, label_en, type, icon, router, `order`, state, created_at, updated_at, parent_id, is_deleted, permission_id)
-SELECT '删除用户', 'Delete', 3, NULL, 4, 1, NOW(), NOW(), @user_menu_id, 0, id FROM permission WHERE name = '/authority/user/delete';
+SELECT '删除用户', 'Delete', 3, NULL, NULL, 4, 1, NOW(), NOW(), @user_menu_id, 0, id FROM permission WHERE name = '/authority/user/delete';
 
 INSERT INTO menu (label, label_en, type, icon, router, `order`, state, created_at, updated_at, parent_id, is_deleted, permission_id)
-SELECT '用户权限按钮', 'Authority', 3, NULL, 5, 1, NOW(), NOW(), @user_menu_id, 0, id FROM permission WHERE name = '/authority/user/authority';
+SELECT '用户权限按钮', 'Authority', 3, NULL, NULL, 5, 1, NOW(), NOW(), @user_menu_id, 0, id FROM permission WHERE name = '/authority/user/authority';
 
 -- ============================================
 -- 11. 插入菜单管理按钮菜单
@@ -164,19 +164,19 @@ SELECT '用户权限按钮', 'Authority', 3, NULL, 5, 1, NOW(), NOW(), @user_men
 SET @menu_menu_id = (SELECT id FROM menu WHERE router = '/system/menu');
 
 INSERT INTO menu (label, label_en, type, icon, router, `order`, state, created_at, updated_at, parent_id, is_deleted, permission_id)
-SELECT '菜单列表', 'Index', 3, NULL, 0, 1, NOW(), NOW(), @menu_menu_id, 0, id FROM permission WHERE name = '/authority/menu/index';
+SELECT '菜单列表', 'Index', 3, NULL, NULL, 0, 1, NOW(), NOW(), @menu_menu_id, 0, id FROM permission WHERE name = '/authority/menu/index';
 
 INSERT INTO menu (label, label_en, type, icon, router, `order`, state, created_at, updated_at, parent_id, is_deleted, permission_id)
-SELECT '查看菜单', 'View', 3, NULL, 1, 1, NOW(), NOW(), @menu_menu_id, 0, id FROM permission WHERE name = '/authority/menu/view';
+SELECT '查看菜单', 'View', 3, NULL, NULL, 1, 1, NOW(), NOW(), @menu_menu_id, 0, id FROM permission WHERE name = '/authority/menu/view';
 
 INSERT INTO menu (label, label_en, type, icon, router, `order`, state, created_at, updated_at, parent_id, is_deleted, permission_id)
-SELECT '创建菜单', 'Create', 3, NULL, 2, 1, NOW(), NOW(), @menu_menu_id, 0, id FROM permission WHERE name = '/authority/menu/create';
+SELECT '创建菜单', 'Create', 3, NULL, NULL, 2, 1, NOW(), NOW(), @menu_menu_id, 0, id FROM permission WHERE name = '/authority/menu/create';
 
 INSERT INTO menu (label, label_en, type, icon, router, `order`, state, created_at, updated_at, parent_id, is_deleted, permission_id)
-SELECT '修改菜单', 'Update', 3, NULL, 3, 1, NOW(), NOW(), @menu_menu_id, 0, id FROM permission WHERE name = '/authority/menu/update';
+SELECT '修改菜单', 'Update', 3, NULL, NULL, 3, 1, NOW(), NOW(), @menu_menu_id, 0, id FROM permission WHERE name = '/authority/menu/update';
 
 INSERT INTO menu (label, label_en, type, icon, router, `order`, state, created_at, updated_at, parent_id, is_deleted, permission_id)
-SELECT '删除菜单', 'Delete', 3, NULL, 4, 1, NOW(), NOW(), @menu_menu_id, 0, id FROM permission WHERE name = '/authority/menu/delete';
+SELECT '删除菜单', 'Delete', 3, NULL, NULL, 4, 1, NOW(), NOW(), @menu_menu_id, 0, id FROM permission WHERE name = '/authority/menu/delete';
 
 -- ============================================
 -- 12. 插入角色管理按钮菜单
@@ -184,19 +184,19 @@ SELECT '删除菜单', 'Delete', 3, NULL, 4, 1, NOW(), NOW(), @menu_menu_id, 0, 
 SET @role_menu_id = (SELECT id FROM menu WHERE router = '/system/role');
 
 INSERT INTO menu (label, label_en, type, icon, router, `order`, state, created_at, updated_at, parent_id, is_deleted, permission_id)
-SELECT '角色列表', 'Index', 3, NULL, 0, 1, NOW(), NOW(), @role_menu_id, 0, id FROM permission WHERE name = '/authority/role/index';
+SELECT '角色列表', 'Index', 3, NULL, NULL, 0, 1, NOW(), NOW(), @role_menu_id, 0, id FROM permission WHERE name = '/authority/role/index';
 
 INSERT INTO menu (label, label_en, type, icon, router, `order`, state, created_at, updated_at, parent_id, is_deleted, permission_id)
-SELECT '查看角色', 'View', 3, NULL, 1, 1, NOW(), NOW(), @role_menu_id, 0, id FROM permission WHERE name = '/authority/role/view';
+SELECT '查看角色', 'View', 3, NULL, NULL, 1, 1, NOW(), NOW(), @role_menu_id, 0, id FROM permission WHERE name = '/authority/role/view';
 
 INSERT INTO menu (label, label_en, type, icon, router, `order`, state, created_at, updated_at, parent_id, is_deleted, permission_id)
-SELECT '创建角色', 'Create', 3, NULL, 2, 1, NOW(), NOW(), @role_menu_id, 0, id FROM permission WHERE name = '/authority/role/create';
+SELECT '创建角色', 'Create', 3, NULL, NULL, 2, 1, NOW(), NOW(), @role_menu_id, 0, id FROM permission WHERE name = '/authority/role/create';
 
 INSERT INTO menu (label, label_en, type, icon, router, `order`, state, created_at, updated_at, parent_id, is_deleted, permission_id)
-SELECT '修改角色', 'Update', 3, NULL, 3, 1, NOW(), NOW(), @role_menu_id, 0, id FROM permission WHERE name = '/authority/role/update';
+SELECT '修改角色', 'Update', 3, NULL, NULL, 3, 1, NOW(), NOW(), @role_menu_id, 0, id FROM permission WHERE name = '/authority/role/update';
 
 INSERT INTO menu (label, label_en, type, icon, router, `order`, state, created_at, updated_at, parent_id, is_deleted, permission_id)
-SELECT '删除角色', 'Delete', 3, NULL, 4, 1, NOW(), NOW(), @role_menu_id, 0, id FROM permission WHERE name = '/authority/role/delete';
+SELECT '删除角色', 'Delete', 3, NULL, NULL, 4, 1, NOW(), NOW(), @role_menu_id, 0, id FROM permission WHERE name = '/authority/role/delete';
 
 -- ============================================
 -- 13. 插入文章管理按钮菜单
@@ -204,19 +204,19 @@ SELECT '删除角色', 'Delete', 3, NULL, 4, 1, NOW(), NOW(), @role_menu_id, 0, 
 SET @article_menu_id = (SELECT id FROM menu WHERE router = '/content/article');
 
 INSERT INTO menu (label, label_en, type, icon, router, `order`, state, created_at, updated_at, parent_id, is_deleted, permission_id)
-SELECT '查看文章', 'View', 3, NULL, 0, 1, NOW(), NOW(), @article_menu_id, 0, id FROM permission WHERE name = '/content/article/view';
+SELECT '查看文章', 'View', 3, NULL, NULL, 0, 1, NOW(), NOW(), @article_menu_id, 0, id FROM permission WHERE name = '/content/article/view';
 
 INSERT INTO menu (label, label_en, type, icon, router, `order`, state, created_at, updated_at, parent_id, is_deleted, permission_id)
-SELECT '创建文章', 'Create', 3, NULL, 2, 1, NOW(), NOW(), @article_menu_id, 0, id FROM permission WHERE name = '/content/article/create';
+SELECT '创建文章', 'Create', 3, NULL, NULL, 2, 1, NOW(), NOW(), @article_menu_id, 0, id FROM permission WHERE name = '/content/article/create';
 
 INSERT INTO menu (label, label_en, type, icon, router, `order`, state, created_at, updated_at, parent_id, is_deleted, permission_id)
-SELECT '修改文章', 'Update', 3, NULL, 3, 1, NOW(), NOW(), @article_menu_id, 0, id FROM permission WHERE name = '/content/article/update';
+SELECT '修改文章', 'Update', 3, NULL, NULL, 3, 1, NOW(), NOW(), @article_menu_id, 0, id FROM permission WHERE name = '/content/article/update';
 
 INSERT INTO menu (label, label_en, type, icon, router, `order`, state, created_at, updated_at, parent_id, is_deleted, permission_id)
-SELECT '删除文章', 'Delete', 3, NULL, 4, 1, NOW(), NOW(), @article_menu_id, 0, id FROM permission WHERE name = '/content/article/delete';
+SELECT '删除文章', 'Delete', 3, NULL, NULL, 4, 1, NOW(), NOW(), @article_menu_id, 0, id FROM permission WHERE name = '/content/article/delete';
 
 INSERT INTO menu (label, label_en, type, icon, router, `order`, state, created_at, updated_at, parent_id, is_deleted, permission_id)
-SELECT '文章列表', 'Index', 3, NULL, 5, 1, NOW(), NOW(), @article_menu_id, 0, id FROM permission WHERE name = '/content/article/index';
+SELECT '文章列表', 'Index', 3, NULL, NULL, 5, 1, NOW(), NOW(), @article_menu_id, 0, id FROM permission WHERE name = '/content/article/index';
 
 -- ============================================
 -- 14. 关联用户与角色
@@ -343,6 +343,34 @@ SELECT r.id, m.id FROM (SELECT id FROM `role` WHERE name='系统管理员') AS r
 
 INSERT INTO `role_menu` (role_id, menu_id)
 SELECT r.id, m.id FROM (SELECT id FROM `role` WHERE name='系统管理员') AS r, (SELECT id FROM `menu` WHERE label='删除文章') AS m;
+
+-- ============================================
+-- 16. 日志管理模块数据
+-- ============================================
+INSERT INTO `permission` (name, description, created_at, updated_at) VALUES
+('/authority/log', '日志管理', NOW(), NOW()),
+('/authority/log/index', '日志列表', NOW(), NOW()),
+('/authority/log/delete', '删除日志', NOW(), NOW());
+
+INSERT INTO menu (label, label_en, type, icon, router, `order`, state, created_at, updated_at, parent_id, is_deleted, permission_id)
+SELECT '日志管理', 'Log Management', 2, NULL, '/system/log', 99, 1, NOW(), NOW(), m.id, 0, p.id FROM (SELECT id FROM menu WHERE router = '/system') AS m CROSS JOIN (SELECT id FROM permission WHERE name = '/authority/log') AS p;
+
+SET @log_menu_id = (SELECT id FROM menu WHERE router = '/system/log');
+
+INSERT INTO menu (label, label_en, type, icon, router, `order`, state, created_at, updated_at, parent_id, is_deleted, permission_id)
+SELECT '日志列表', 'Index', 3, NULL, NULL, 0, 1, NOW(), NOW(), @log_menu_id, 0, id FROM permission WHERE name = '/authority/log/index';
+
+INSERT INTO menu (label, label_en, type, icon, router, `order`, state, created_at, updated_at, parent_id, is_deleted, permission_id)
+SELECT '删除日志', 'Delete', 3, NULL, NULL, 1, 1, NOW(), NOW(), @log_menu_id, 0, id FROM permission WHERE name = '/authority/log/delete';
+
+INSERT INTO `role_menu` (role_id, menu_id)
+SELECT r.id, m.id FROM (SELECT id FROM `role` WHERE name='系统管理员') AS r, (SELECT id FROM `menu` WHERE label='日志管理') AS m;
+
+INSERT INTO `role_menu` (role_id, menu_id)
+SELECT r.id, m.id FROM (SELECT id FROM `role` WHERE name='系统管理员') AS r, (SELECT id FROM `menu` WHERE label='日志列表') AS m;
+
+INSERT INTO `role_menu` (role_id, menu_id)
+SELECT r.id, m.id FROM (SELECT id FROM `role` WHERE name='系统管理员') AS r, (SELECT id FROM `menu` WHERE label='删除日志') AS m;
 
 -- ============================================
 -- 重新启用外键约束检查

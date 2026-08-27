@@ -103,3 +103,18 @@ export class PaginationDto {
   @IsInt()
   pageSize?: number = 10;
 }
+
+/** 用户分页查询（不能用交叉类型，否则 ValidationPipe 反射元数据退化为 Object，@Type 转换失效） */
+export class UserPageDto extends PaginationDto {
+  @IsOptional()
+  @IsString()
+  username?: string;
+
+  @IsOptional()
+  @IsString()
+  email?: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+}

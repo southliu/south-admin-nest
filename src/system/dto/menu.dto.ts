@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsInt, IsArray } from 'class-validator';
+import { IsString, IsOptional, IsInt, IsArray, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateMenuDto {
@@ -92,5 +92,6 @@ export class ChangeMenuStateDto {
 
   @Type(() => Number)
   @IsInt()
+  @IsIn([0, 1])
   state: number;
 }

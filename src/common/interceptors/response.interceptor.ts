@@ -30,6 +30,11 @@ const formatDates = (data: any): any => {
     return data;
   }
 
+  // 实体定义了 toJSON（如剔除密码哈希）时优先应用
+  if (typeof data.toJSON === 'function') {
+    return formatDates(data.toJSON());
+  }
+
   if (Array.isArray(data)) {
     return data.map((item) => formatDates(item));
   }

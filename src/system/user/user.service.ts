@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '../entities/user.entity';
@@ -15,7 +15,7 @@ import {
   CreateUserDto,
   UpdateUserDto,
   UpdatePasswordDto,
-  PaginationDto,
+  UserPageDto,
 } from '../dto/user.dto';
 import { UserInfo } from '../../common/decorators/current-user.decorator';
 
@@ -103,8 +103,8 @@ export class UserService {
     };
   }
 
-  async page(dto: PaginationDto & { username?: string }) {
-    const { page = 1, pageSize = 10, username } = dto;
+  async page(dto: UserPageDto) {
+    const { page = 1, pageSize = 10, username, email, phone } = dto;
     const skip = (page - 1) * pageSize;
 
     const queryBuilder = this.userRepository
@@ -117,6 +117,12 @@ export class UserService {
         username: `%${username}%`,
       });
     }
+    if (email) {
+      queryBuilder.andWhere('user.email LIKE :email', { email: `%${email}%` });
+    }
+    if (phone) {
+      queryBuilder.andWhere('user.phone LIKE :phone', { phone: `%${phone}%` });
+    }
 
     const [items, total] = await queryBuilder
       .skip(skip)
@@ -125,7 +131,7 @@ export class UserService {
       .getManyAndCount();
 
     const itemsWithRoleCount = items.map((user) => ({
-      ...user,
+      ...user.toJSON(),
       rolesName: (user.roles?.map((role) => role.name) || []).join(','),
       roleCount: user.roles?.length || 0,
     }));
@@ -150,7 +156,7 @@ export class UserService {
     }
 
     return {
-      ...user,
+      ...user.toJSON(),
       roleIds: user.roles?.map((role) => role.id) || [],
     };
   }
@@ -231,6 +237,17 @@ export class UserService {
     user.isDeleted = 1;
     user.deletedAt = new Date();
     await this.userRepository.save(user);
+  }
+
+  async deleteBatch(ids: number[]) {
+    if (!ids || ids.length === 0) {
+      throw new BadRequestException('请选择要删除的用户');
+    }
+
+    await this.userRepository.update(
+      { id: In(ids), isDeleted: 0 },
+      { isDeleted: 1, deletedAt: new Date() },
+    );
   }
 
   async list() {

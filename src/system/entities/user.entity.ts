@@ -4,6 +4,12 @@ import { Role } from './role.entity';
 
 @Entity('user')
 export class User extends BaseEntity {
+  toJSON() {
+    // 序列化时剔除密码哈希
+    const { password, ...rest } = this;
+    return rest;
+  }
+
   @Column({ length: 50 })
   username: string;
 
